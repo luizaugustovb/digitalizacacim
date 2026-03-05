@@ -1,0 +1,451 @@
+
+
+<?php $__env->startSection('page-title', 'Escanear Documentos'); ?>
+
+<?php $__env->startSection('content'); ?>
+<div x-data="{ showConfirmEnviar: false }" class="max-w-5xl mx-auto space-y-6">
+    <!-- Mensagens de Sucesso/Erro -->
+    <?php if(session('success')): ?>
+    <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+        <div class="flex items-center">
+            <svg class="w-6 h-6 text-green-600 dark:text-green-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <p class="text-sm font-medium text-green-800 dark:text-green-200"><?php echo e(session('success')); ?></p>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if(session('error')): ?>
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <div class="flex items-center">
+            <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+            <p class="text-sm font-medium text-red-800 dark:text-red-200"><?php echo e(session('error')); ?></p>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if($errors->any()): ?>
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <div class="flex items-start">
+            <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+            <div>
+                <p class="text-sm font-medium text-red-800 dark:text-red-200 mb-1">Erro ao enviar documento:</p>
+                <ul class="text-sm text-red-700 dark:text-red-300 list-disc list-inside">
+                    <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <li><?php echo e($error); ?></li>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Cabeçalho -->
+    <div>
+        <a href="<?php echo e(route('pedidos.show', $pedido)); ?>"
+            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Voltar para Detalhes
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Escanear Documentos</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Pedido #<?php echo e($pedido->codigo_pedido); ?> - <?php echo e($pedido->nome_paciente); ?>
+
+        </p>
+    </div>
+
+    <!-- Informações do Pedido -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Paciente</span>
+                <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white"><?php echo e($pedido->nome_paciente); ?></p>
+            </div>
+            <div>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Convênio</span>
+                <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white"><?php echo e($pedido->cod_guia ?? '-'); ?></p>
+            </div>
+            <div>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Data</span>
+                <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white"><?php echo e($pedido->data_atendimento ? $pedido->data_atendimento->format('d/m/Y') : '-'); ?></p>
+            </div>
+            <div>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tipo</span>
+                <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white"><?php echo e($pedido->tipo_atendimento ?? '-'); ?></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div class="flex items-start">
+            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <div class="text-sm">
+                <p class="font-semibold text-blue-800 dark:text-blue-200">Documentos Obrigatórios</p>
+                <ul class="mt-1 text-blue-700 dark:text-blue-300 list-disc list-inside">
+                    <li>Guia Médica</li>
+                    <li>Autorização/SADT</li>
+                </ul>
+                <p class="mt-2 text-blue-600 dark:text-blue-400">Formato aceito: PDF, JPG, JPEG, PNG (máx. 10MB)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulários de Upload por Tipo -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <?php
+        $tiposDocumento = [
+        ['tipo' => 'Guia Médica', 'obrigatorio' => true, 'icon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
+        ['tipo' => 'Autorização/SADT', 'obrigatorio' => true, 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
+        ['tipo' => 'Documento Extra', 'obrigatorio' => false, 'icon' => 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z'],
+        ['tipo' => 'Formulário', 'obrigatorio' => false, 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'],
+        ];
+        $documentosExistentes = $pedido->documentos->pluck('tipo_documento')->toArray();
+        ?>
+
+        <?php $__currentLoopData = $tiposDocumento; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $doc): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        <?php
+        $jaAnexado = in_array($doc['tipo'], $documentosExistentes);
+        ?>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 <?php echo e($jaAnexado ? 'ring-2 ring-green-500' : ''); ?>">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 <?php echo e($jaAnexado ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-100 dark:bg-gray-700'); ?> rounded-lg">
+                        <svg class="w-6 h-6 <?php echo e($jaAnexado ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'); ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?php echo e($doc['icon']); ?>" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-white"><?php echo e($doc['tipo']); ?></h3>
+                        <?php if($doc['obrigatorio']): ?>
+                        <span class="px-2 py-0.5 text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded">OBRIGATÓRIO</span>
+                        <?php else: ?>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Opcional</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php if($jaAnexado): ?>
+                <div class="flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full text-xs font-medium">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    Anexado
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <?php if(!$jaAnexado): ?>
+            <form method="POST" action="<?php echo e(route('documentos.upload')); ?>" enctype="multipart/form-data"
+                x-data="scannerForm()">
+                <?php echo csrf_field(); ?>
+                <input type="hidden" name="pedido_id" value="<?php echo e($pedido->id); ?>">
+                <input type="hidden" name="tipo_documento" value="<?php echo e($doc['tipo']); ?>">
+
+                <div class="space-y-3">
+                    <!-- Botões de Opção -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" @click="iniciarScanner()" :disabled="escaneando"
+                            :class="escaneando ? 'bg-gray-400 cursor-wait' : 'bg-purple-600 hover:bg-purple-700'"
+                            class="px-4 py-3 text-white rounded-lg transition font-medium text-sm flex items-center justify-center gap-2">
+                            <svg x-show="!escaneando" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                            </svg>
+                            <svg x-show="escaneando" x-cloak class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span x-text="escaneando ? 'Escaneando...' : 'Escanear Agora'"></span>
+                        </button>
+                        <label class="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium text-sm flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            Selecionar Arquivo
+                            <input type="file"
+                                x-ref="fileInput"
+                                name="arquivo"
+                                @change="arquivo = $event.target.files[0]"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                class="hidden">
+                        </label>
+                    </div>
+
+                    <div x-show="arquivo" class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-blue-700 dark:text-blue-300">
+                        <span class="font-medium">Arquivo selecionado:</span>
+                        <span x-text="arquivo ? arquivo.name : ''"></span>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium text-sm flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Anexar <?php echo e($doc['tipo']); ?>
+
+                    </button>
+                </div>
+            </form>
+            <?php else: ?>
+            <div class="text-center py-4">
+                <p class="text-sm text-green-600 dark:text-green-400 font-medium">✓ Documento já anexado</p>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+    </div>
+
+    <!-- Documentos Já Anexados -->
+    <?php if($pedido->documentos->count() > 0): ?>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Documentos Anexados</h2>
+        <div class="space-y-3">
+            <?php $__currentLoopData = $pedido->documentos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $documento): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                <div class="flex items-center gap-4 flex-1">
+                    <!-- Ícone -->
+                    <?php
+                    $iconeClass = [
+                    'Guia Médica' => 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300',
+                    'Autorização/SADT' => 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300',
+                    'Documento Extra' => 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+                    'Formulário' => 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300',
+                    ];
+                    ?>
+                    <div class="w-12 h-12 rounded-lg <?php echo e($iconeClass[$documento->tipo_documento] ?? 'bg-gray-100'); ?> flex items-center justify-center flex-shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+
+                    <!-- Informações -->
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">
+                            <?php echo e($documento->tipo_documento); ?>
+
+                            <?php if($documento->tipo_documento === 'Guia Médica' || $documento->tipo_documento === 'Autorização/SADT'): ?>
+                            <span class="ml-2 px-2 py-0.5 text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded">OBRIGATÓRIO</span>
+                            <?php endif; ?>
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 truncate"><?php echo e($documento->arquivo_nome); ?></p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500">
+                            <?php echo e(number_format($documento->tamanho / 1024, 2)); ?> KB •
+                            <?php echo e($documento->created_at->format('d/m/Y H:i')); ?>
+
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Ações -->
+                <div class="flex items-center gap-2">
+                    <a href="<?php echo e(route('documentos.preview', $documento)); ?>"
+                        target="_blank"
+                        class="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition"
+                        title="Visualizar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </a>
+                    <form method="POST" action="<?php echo e(route('documentos.destroy', $documento)); ?>" class="inline">
+                        <?php echo csrf_field(); ?>
+                        <?php echo method_field('DELETE'); ?>
+                        <button type="submit"
+                            onclick="return confirm('Tem certeza que deseja remover este documento?')"
+                            class="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition"
+                            title="Remover">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Ações Rápidas -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ações</h2>
+        <div class="space-y-3">
+            <div class="flex gap-3">
+                <!-- Botão Salvar (sempre disponível) -->
+                <a href="<?php echo e(route('pedidos.show', $pedido)); ?>"
+                    class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Salvar e Voltar
+                </a>
+
+                <!-- Botão Enviar (só se tiver documentos obrigatórios) -->
+                <?php if($pedido->temDocumentosObrigatorios()): ?>
+                <form method="POST" action="<?php echo e(route('pedidos.enviar', $pedido)); ?>" class="flex-1" id="enviarFormEscanear">
+                    <?php echo csrf_field(); ?>
+                    <?php echo method_field('PUT'); ?>
+                    <button type="button"
+                        @click="showConfirmEnviar = true"
+                        class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Enviar para Conferência
+                    </button>
+                </form>
+                <?php endif; ?>
+            </div>
+
+            <?php if(!$pedido->temDocumentosObrigatorios()): ?>
+            <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                    ⚠️ Anexe os documentos obrigatórios (Guia Médica e Autorização/SADT) para enviar o pedido
+                </p>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div x-show="showConfirmEnviar"
+        x-cloak
+        @click.self="showConfirmEnviar = false"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Confirmar Envio</h3>
+                    </div>
+                </div>
+
+                <p class="text-gray-600 dark:text-gray-300 mb-6">Tem certeza que deseja enviar este pedido para conferência?</p>
+
+                <div class="flex gap-3 justify-end">
+                    <button @click="showConfirmEnviar = false"
+                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg transition">
+                        Cancelar
+                    </button>
+                    <button @click="document.getElementById('enviarFormEscanear').submit()"
+                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startPush('styles'); ?>
+<link rel="stylesheet" href="<?php echo e(asset('css/scanner.css')); ?>">
+<?php $__env->stopPush(); ?>
+
+<?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('js/scanner.js')); ?>" type="text/javascript"></script>
+<script>
+    // Configurar Asprise Scanner
+    if (typeof scanner !== 'undefined') {
+        scanner.setLicenseKey(""); // Versão gratuita/trial
+        console.log('Asprise Scanner carregado com sucesso!');
+    } else {
+        console.error('Asprise Scanner não foi carregado. Verifique se o arquivo scanner.js está acessível.');
+    }
+
+    // Função Alpine.js para o formulário de scanner
+    function scannerForm() {
+        return {
+            arquivo: null,
+            escaneando: false,
+
+            iniciarScanner() {
+                console.log('Iniciando scanner...');
+
+                if (typeof scanner === 'undefined') {
+                    alert('Biblioteca do scanner não está carregada. Use a opção Selecionar Arquivo.');
+                    return;
+                }
+
+                this.escaneando = true;
+
+                scanner.scan((successful, mesg, response) => {
+                    this.escaneando = false;
+
+                    if (!successful) {
+                        console.error('Erro ao escanear:', mesg);
+                        alert('Erro ao escanear: ' + mesg);
+                        return;
+                    }
+
+                    const images = (typeof scanner !== 'undefined' && scanner.getScannedImages) ?
+                        scanner.getScannedImages(response, true, false) :
+                        [];
+
+                    if (images && images.length > 0) {
+                        const base64Data = images[0].src.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
+                        const blob = this.base64ToBlob(base64Data, images[0].mimeType || 'image/jpeg');
+                        const file = new File([blob], 'scan_' + Date.now() + '.jpg', {
+                            type: images[0].mimeType || 'image/jpeg'
+                        });
+
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        this.$refs.fileInput.files = dataTransfer.files;
+                        this.arquivo = file;
+
+                        alert('Documento escaneado com sucesso!');
+                    } else {
+                        alert('Nenhuma imagem foi escaneada.');
+                    }
+                }, {
+                    output_settings: [{
+                        type: 'return-base64',
+                        format: 'jpg',
+                        quality: 92
+                    }],
+                    use_asprise_dialog: true,
+                    show_scanner_ui: true,
+                    resolution: 300,
+                    page_size: 'auto',
+                    pixel_type: 'color'
+                });
+            },
+
+            base64ToBlob(base64, contentType) {
+                const byteCharacters = atob(base64);
+                const byteArrays = [];
+
+                for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                    const slice = byteCharacters.slice(offset, offset + 512);
+                    const byteNumbers = new Array(slice.length);
+
+                    for (let i = 0; i < slice.length; i++) {
+                        byteNumbers[i] = slice.charCodeAt(i);
+                    }
+
+                    byteArrays.push(new Uint8Array(byteNumbers));
+                }
+
+                return new Blob(byteArrays, {
+                    type: contentType
+                });
+            }
+        };
+    }
+</script>
+<?php $__env->stopPush(); ?>
+<?php echo $__env->make('layouts.main', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\digitalizacacim\resources\views/pedidos/escanear.blade.php ENDPATH**/ ?>
