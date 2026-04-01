@@ -2,7 +2,7 @@
 
 @section('page-title', 'Convênios')
 
-@section('content')
+@section('page-content')
 <div class="max-w-7xl mx-auto space-y-6">
     <!-- Header -->
     <div class="flex justify-between items-center">
@@ -87,7 +87,14 @@
                         @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button onclick="editConvenio({{ $convenio->id }}, '{{ addslashes($convenio->nome) }}', '{{ addslashes($convenio->codigo) }}', '{{ addslashes($convenio->observacoes ?? '') }}', {{ $convenio->ativo ? 'true' : 'false' }}, @json($convenio->modulos ?? []))"
+                        <button
+                            onclick="editConvenio(this)"
+                            data-id="{{ $convenio->id }}"
+                            data-nome="{{ $convenio->nome }}"
+                            data-codigo="{{ $convenio->codigo }}"
+                            data-observacoes="{{ $convenio->observacoes ?? '' }}"
+                            data-ativo="{{ $convenio->ativo ? '1' : '0' }}"
+                            data-modulos="{{ json_encode($convenio->modulos ?? []) }}"
                             class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
                             Editar
                         </button>
@@ -243,7 +250,14 @@
         document.getElementById('convenioModal').classList.add('hidden');
     }
 
-    function editConvenio(id, nome, codigo, observacoes, ativo, modulos) {
+    function editConvenio(el) {
+        const id = el.dataset.id;
+        const nome = el.dataset.nome;
+        const codigo = el.dataset.codigo;
+        const observacoes = el.dataset.observacoes;
+        const ativo = el.dataset.ativo === '1';
+        const modulos = JSON.parse(el.dataset.modulos || '[]');
+
         const modal = document.getElementById('convenioModal');
         const form = document.getElementById('convenioForm');
         const title = document.getElementById('modalTitle');
@@ -257,7 +271,6 @@
         document.getElementById('observacoes').value = observacoes;
         document.getElementById('ativo').checked = ativo;
 
-        // Marcar checkboxes de módulos conforme configurado
         document.querySelectorAll('.modulo-check').forEach(cb => {
             cb.checked = Array.isArray(modulos) && modulos.includes(cb.value);
         });
