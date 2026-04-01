@@ -9,8 +9,8 @@
 
         <!-- Header do Sidebar -->
         <div class="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-            <div x-show="sidebarOpen" class="flex items-center space-x-2">
-                <span class="text-2xl font-bold text-green-600 dark:text-green-500">CIM</span>
+            <div x-show="sidebarOpen" class="flex items-center justify-center flex-1">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" class="h-12 w-auto object-contain">
             </div>
             <button @click="sidebarOpen = !sidebarOpen"
                 class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
