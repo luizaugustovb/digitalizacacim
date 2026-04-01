@@ -1,7 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.main')
 
-@section('content')
-<div class="container mx-auto px-4 py-8 max-w-7xl">
+@section('page-title', 'Tipos de Pendências')
+
+@section('page-content')
+<div class="space-y-6">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <div>

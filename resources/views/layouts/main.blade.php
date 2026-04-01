@@ -159,7 +159,7 @@
             </div>
             @endif
 
-            @yield('content')
+            @yield('page-content')
         </main>
 
         <!-- Footer -->
