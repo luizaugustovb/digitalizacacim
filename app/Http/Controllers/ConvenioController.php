@@ -41,9 +41,12 @@ class ConvenioController extends Controller implements HasMiddleware
             'codigo' => 'required|string|max:50|unique:convenios,codigo',
             'observacoes' => 'nullable|string|max:500',
             'ativo' => 'boolean',
+            'modulos' => 'nullable|array',
+            'modulos.*' => 'in:Controle Interno,Requisição Médica,Autorização,Guia TISS',
         ]);
 
         $validated['ativo'] = $request->has('ativo');
+        $validated['modulos'] = $request->input('modulos', []);
 
         Convenio::create($validated);
 
@@ -62,9 +65,12 @@ class ConvenioController extends Controller implements HasMiddleware
             'codigo' => 'required|string|max:50|unique:convenios,codigo,' . $convenio->id,
             'observacoes' => 'nullable|string|max:500',
             'ativo' => 'boolean',
+            'modulos' => 'nullable|array',
+            'modulos.*' => 'in:Controle Interno,Requisição Médica,Autorização,Guia TISS',
         ]);
 
         $validated['ativo'] = $request->has('ativo');
+        $validated['modulos'] = $request->input('modulos', []);
 
         $convenio->update($validated);
 

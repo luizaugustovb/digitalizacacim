@@ -77,22 +77,33 @@
         </div>
 
         <!-- Documentos Lado a Lado -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            @foreach($pedido->documentos as $documento)
+        @php
+        $documentosOrdenados = $pedido->documentos->sortByDesc(function($d) {
+        return $d->tipo_documento === 'Requisição Médica' ? 1 : 0;
+        })->values();
+        $totalDocs = $documentosOrdenados->count();
+        $gridCols = $totalDocs >= 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2';
+        $colors = [
+        'Guia Médica' => 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+        'Autorização/SADT' => 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+        'Controle Interno' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+        'Requisição Médica' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+        'Autorização' => 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+        'Guia TISS' => 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+        'Documento Extra' => 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+        'Formulário' => 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+        ];
+        @endphp
+        <div class="grid grid-cols-1 {{ $gridCols }} gap-6">
+            @foreach($documentosOrdenados as $documento)
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
                 <!-- Header do Documento -->
                 <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-600">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
                         @php
-                        $colors = [
-                        'Guia Médica' => 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-                        'Autorização' => 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-                        'SADT' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-                        'Documento Extra' => 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-                        'Formulário' => 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200'
-                        ];
+                        $badgeClass = $colors[$documento->tipo_documento] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
                         @endphp
-                        <span class="px-2 py-1 rounded text-xs font-medium {{ $colors[$documento->tipo_documento] ?? 'bg-gray-100 text-gray-800' }} flex-shrink-0">
+                        <span class="px-2 py-1 rounded text-xs font-medium {{ $badgeClass }} flex-shrink-0">
                             {{ $documento->tipo_documento }}
                         </span>
                         <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $documento->arquivo_nome }}</span>

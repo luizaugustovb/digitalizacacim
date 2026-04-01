@@ -58,6 +58,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nome</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Código</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pedidos</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Módulos</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
                 </tr>
@@ -77,6 +78,17 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {{ $convenio->pedidos_count }} pedidos
                     </td>
+                    <td class="px-6 py-4">
+                        @if(!empty($convenio->modulos))
+                        <div class="flex flex-wrap gap-1">
+                            @foreach($convenio->modulos as $mod)
+                            <span class="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">{{ $mod }}</span>
+                            @endforeach
+                        </div>
+                        @else
+                        <span class="text-xs text-gray-400">Padrão</span>
+                        @endif
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         @if($convenio->ativo)
                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
@@ -89,7 +101,7 @@
                         @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button onclick="editConvenio({{ $convenio->id }}, '{{ addslashes($convenio->nome) }}', '{{ addslashes($convenio->codigo) }}', '{{ addslashes($convenio->observacoes ?? '') }}', {{ $convenio->ativo ? 'true' : 'false' }})"
+                        <button onclick="editConvenio({{ $convenio->id }}, '{{ addslashes($convenio->nome) }}', '{{ addslashes($convenio->codigo) }}', '{{ addslashes($convenio->observacoes ?? '') }}', {{ $convenio->ativo ? 'true' : 'false' }}, @json($convenio->modulos ?? []))"
                             class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
                             Editar
                         </button>
@@ -179,6 +191,22 @@
                     placeholder="Informações adicionais sobre o convênio..."></textarea>
             </div>
 
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Módulos de Documentos
+                </label>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Selecione os documentos obrigatórios para este convênio. Se nenhum for selecionado, usa o padrão do sistema.</p>
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach(\App\Models\Convenio::MODULOS_DISPONIVEIS as $modulo)
+                    <label class="flex items-center gap-2 p-2 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <input type="checkbox" name="modulos[]" value="{{ $modulo }}"
+                            class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 modulo-check">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">{{ $modulo }}</span>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
             <div class="flex items-center">
                 <input type="checkbox" name="ativo" id="ativo" value="1" checked
                     class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
@@ -218,6 +246,8 @@
             document.getElementById('methodField').value = 'POST';
             form.reset();
             document.getElementById('ativo').checked = true;
+            // Limpar checkboxes de módulos
+            document.querySelectorAll('.modulo-check').forEach(cb => cb.checked = false);
         }
 
         modal.classList.remove('hidden');
@@ -227,7 +257,7 @@
         document.getElementById('convenioModal').classList.add('hidden');
     }
 
-    function editConvenio(id, nome, codigo, observacoes, ativo) {
+    function editConvenio(id, nome, codigo, observacoes, ativo, modulos) {
         const modal = document.getElementById('convenioModal');
         const form = document.getElementById('convenioForm');
         const title = document.getElementById('modalTitle');
@@ -240,6 +270,11 @@
         document.getElementById('codigo').value = codigo;
         document.getElementById('observacoes').value = observacoes;
         document.getElementById('ativo').checked = ativo;
+
+        // Marcar checkboxes de módulos conforme configurado
+        document.querySelectorAll('.modulo-check').forEach(cb => {
+            cb.checked = Array.isArray(modulos) && modulos.includes(cb.value);
+        });
 
         modal.classList.remove('hidden');
     }

@@ -9,8 +9,18 @@ class Convenio extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nome', 'codigo', 'observacoes', 'ativo'];
-    protected $casts = ['ativo' => 'boolean'];
+    const MODULOS_DISPONIVEIS = [
+        'Controle Interno',
+        'Requisição Médica',
+        'Autorização',
+        'Guia TISS',
+    ];
+
+    protected $fillable = ['nome', 'codigo', 'observacoes', 'ativo', 'modulos'];
+    protected $casts = [
+        'ativo' => 'boolean',
+        'modulos' => 'array',
+    ];
 
     public function pedidos()
     {

@@ -66,8 +66,21 @@ class Pedido extends Model
         return $this->hasMany(TimelineLog::class)->orderBy('created_at', 'desc');
     }
 
-    public function temDocumentosObrigatorios()
+    public function temDocumentosObrigatorios(): bool
     {
+        $modulos = $this->convenio?->modulos;
+
+        if (!empty($modulos)) {
+            $tiposAnexados = $this->documentos()->pluck('tipo_documento')->toArray();
+            foreach ($modulos as $modulo) {
+                if (!in_array($modulo, $tiposAnexados)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Fallback legado
         $temGuia = $this->documentos()
             ->where('tipo_documento', 'Guia Médica')
             ->exists();

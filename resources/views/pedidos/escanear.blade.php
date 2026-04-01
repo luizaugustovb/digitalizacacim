@@ -83,6 +83,37 @@
     </div>
 
     <!-- Alertas -->
+    @php
+    $MODULOS_ICONES = [
+    'Controle Interno' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+    'Requisição Médica' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+    'Autorização' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+    'Guia TISS' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+    'Guia Médica' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+    'Autorização/SADT' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+    'Documento Extra' => 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
+    'Formulário' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+    ];
+
+    $convenioModulos = $pedido->convenio?->modulos;
+    if (!empty($convenioModulos)) {
+    $tiposDocumento = collect($convenioModulos)->map(fn($mod) => [
+    'tipo' => $mod,
+    'obrigatorio' => true,
+    'icon' => $MODULOS_ICONES[$mod] ?? $MODULOS_ICONES['Controle Interno'],
+    ])->toArray();
+    } else {
+    $tiposDocumento = [
+    ['tipo' => 'Guia Médica', 'obrigatorio' => true, 'icon' => $MODULOS_ICONES['Guia Médica']],
+    ['tipo' => 'Autorização/SADT', 'obrigatorio' => true, 'icon' => $MODULOS_ICONES['Autorização/SADT']],
+    ['tipo' => 'Documento Extra', 'obrigatorio' => false, 'icon' => $MODULOS_ICONES['Documento Extra']],
+    ['tipo' => 'Formulário', 'obrigatorio' => false, 'icon' => $MODULOS_ICONES['Formulário']],
+    ];
+    }
+
+    $modulosObrigatorios = collect($tiposDocumento)->where('obrigatorio', true)->pluck('tipo');
+    @endphp
+
     <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <div class="flex items-start">
             <svg class="w-6 h-6 text-blue-600 dark:text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -91,8 +122,9 @@
             <div class="text-sm">
                 <p class="font-semibold text-blue-800 dark:text-blue-200">Documentos Obrigatórios</p>
                 <ul class="mt-1 text-blue-700 dark:text-blue-300 list-disc list-inside">
-                    <li>Guia Médica</li>
-                    <li>Autorização/SADT</li>
+                    @foreach($modulosObrigatorios as $modulo)
+                    <li>{{ $modulo }}</li>
+                    @endforeach
                 </ul>
                 <p class="mt-2 text-blue-600 dark:text-blue-400">Formato aceito: PDF, JPG, JPEG, PNG (máx. 10MB)</p>
             </div>
@@ -102,12 +134,6 @@
     <!-- Formulários de Upload por Tipo -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         @php
-        $tiposDocumento = [
-        ['tipo' => 'Guia Médica', 'obrigatorio' => true, 'icon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
-        ['tipo' => 'Autorização/SADT', 'obrigatorio' => true, 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
-        ['tipo' => 'Documento Extra', 'obrigatorio' => false, 'icon' => 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z'],
-        ['tipo' => 'Formulário', 'obrigatorio' => false, 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'],
-        ];
         $documentosExistentes = $pedido->documentos->pluck('tipo_documento')->toArray();
         @endphp
 
@@ -228,7 +254,7 @@
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-900 dark:text-white">
                             {{ $documento->tipo_documento }}
-                            @if($documento->tipo_documento === 'Guia Médica' || $documento->tipo_documento === 'Autorização/SADT')
+                            @if(in_array($documento->tipo_documento, $modulosObrigatorios->toArray()))
                             <span class="ml-2 px-2 py-0.5 text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded">OBRIGATÓRIO</span>
                             @endif
                         </p>
@@ -388,8 +414,7 @@
                     }
 
                     const images = (typeof scanner !== 'undefined' && scanner.getScannedImages) ?
-                        scanner.getScannedImages(response, true, false) :
-                        [];
+                        scanner.getScannedImages(response, true, false) : [];
 
                     if (images && images.length > 0) {
                         const base64Data = images[0].src.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');

@@ -20,7 +20,7 @@ class DocumentoController extends Controller
     {
         $request->validate([
             'pedido_id' => 'required|exists:pedidos,id',
-            'tipo_documento' => 'required|in:Guia Médica,Autorização/SADT,Documento Extra,Formulário',
+            'tipo_documento' => 'required|in:Guia Médica,Autorização/SADT,Documento Extra,Formulário,Controle Interno,Requisição Médica,Autorização,Guia TISS',
             'arquivo' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240', // 10MB
         ], [
             'arquivo.required' => 'Selecione um arquivo para upload.',
