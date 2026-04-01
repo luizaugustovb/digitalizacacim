@@ -20,7 +20,8 @@ class DocumentoController extends Controller
     {
         $request->validate([
             'pedido_id' => 'required|exists:pedidos,id',
-            'tipo_documento' => 'required|in:Guia Médica,Autorização/SADT,Documento Extra,Formulário,Controle Interno,Requisição Médica,Autorização,Guia TISS',
+            'tipo_documento' => 'required|in:Guia Médica,Autorização/SADT,Documento Extra,Formulário,Controle Interno,Requisição Médica,Autorização,Guia TISS,Outros Documentos',
+            'grupo' => 'required_if:tipo_documento,Outros Documentos|nullable|string|max:150',
             'arquivo' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240', // 10MB
         ], [
             'arquivo.required' => 'Selecione um arquivo para upload.',
@@ -77,6 +78,7 @@ class DocumentoController extends Controller
             $documento = Documento::create([
                 'pedido_id' => $pedido->id,
                 'tipo_documento' => $request->tipo_documento,
+                'grupo' => $request->tipo_documento === 'Outros Documentos' ? $request->grupo : null,
                 'arquivo_nome' => $nomeArquivo,
                 'arquivo_path' => $caminhoCompleto,
                 'tamanho' => $arquivo->getSize(),
@@ -95,6 +97,13 @@ class DocumentoController extends Controller
             ]);
 
             DB::commit();
+
+            // Para Outros Documentos, redirecionar com parâmetro para perguntar sobre mais páginas
+            if ($request->tipo_documento === 'Outros Documentos' && $request->mais_paginas_redirect) {
+                $grupo = urlencode($request->grupo);
+                return redirect(route('pedidos.escanear', $pedido) . '?mais_paginas=1&grupo=' . $grupo)
+                    ->with('success', 'Documento enviado com sucesso!');
+            }
 
             return back()->with('success', 'Documento enviado com sucesso!');
         } catch (\Exception $e) {

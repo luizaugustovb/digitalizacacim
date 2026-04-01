@@ -2,7 +2,7 @@
 
 @section('page-title', 'Escanear Documentos')
 
-@section('content')
+@section('page-content')
 <div x-data="{ showConfirmEnviar: false }" class="max-w-5xl mx-auto space-y-6">
     <!-- Mensagens de Sucesso/Erro -->
     @if(session('success'))
@@ -227,6 +227,187 @@
         @endforeach
     </div>
 
+    <!-- Outros Documentos -->
+    <div id="outros-documentos" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6"
+        x-data="outrosDocumentos()" x-init="init()">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Outros Documentos</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Documentos adicionais — cada item pode ter múltiplas páginas</p>
+            </div>
+            <button type="button" @click="abrirNovo()"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Novo Documento
+            </button>
+        </div>
+
+        @php
+        $outrosDocs = $pedido->documentos->where('tipo_documento', 'Outros Documentos');
+        $gruposExistentes = $outrosDocs->groupBy('grupo');
+        @endphp
+
+        @if($gruposExistentes->count() > 0)
+        <div class="space-y-3 mb-4">
+            @foreach($gruposExistentes as $grupoNome => $grupoDocs)
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-indigo-100 dark:bg-indigo-900 rounded">
+                            <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-gray-900 dark:text-white">{{ $grupoNome }}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                            {{ $grupoDocs->count() }} {{ $grupoDocs->count() == 1 ? 'página' : 'páginas' }}
+                        </span>
+                    </div>
+                    <button type="button"
+                        @click="adicionarPagina('{{ addslashes($grupoNome) }}')"
+                        class="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 flex items-center gap-1 border border-indigo-300 dark:border-indigo-700 px-2 py-1 rounded-lg transition">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Adicionar página
+                    </button>
+                </div>
+                <div class="space-y-1.5">
+                    @foreach($grupoDocs as $i => $doc)
+                    <div class="flex items-center justify-between py-1.5 px-3 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <span class="text-xs font-medium text-gray-400 w-5">p{{ $i + 1 }}</span>
+                            <span class="text-gray-600 dark:text-gray-300 truncate">{{ $doc->arquivo_nome }}</span>
+                            <span class="text-xs text-gray-400">{{ number_format($doc->tamanho / 1024, 0) }}KB</span>
+                        </div>
+                        <div class="flex items-center gap-1 ml-2">
+                            <a href="{{ route('documentos.preview', $doc) }}" target="_blank"
+                                class="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </a>
+                            <form method="POST" action="{{ route('documentos.destroy', $doc) }}" class="inline"
+                                onsubmit="return confirm('Remover esta página?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
+        <!-- Modal Upload -->
+        <div x-show="modalAberto" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            @click.self="modalAberto = false">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4" x-text="titulo"></h3>
+
+                <form method="POST" action="{{ route('documentos.upload') }}" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
+                    <input type="hidden" name="tipo_documento" value="Outros Documentos">
+                    <input type="hidden" name="mais_paginas_redirect" value="1">
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Nome do Documento <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="grupo" x-model="grupo" :readonly="grupoFixo"
+                                :class="grupoFixo ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                                placeholder="Ex: Laudo Médico, Receita, Prontuário..." required>
+                            <p x-show="grupoFixo" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Adicionando página a: <strong x-text="grupo"></strong>
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Arquivo</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button type="button" @click="iniciarScanner()" :disabled="escaneando"
+                                    :class="escaneando ? 'bg-gray-400 cursor-wait' : 'bg-purple-600 hover:bg-purple-700'"
+                                    class="px-4 py-3 text-white rounded-lg transition font-medium text-sm flex items-center justify-center gap-2">
+                                    <svg x-show="!escaneando" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                                    </svg>
+                                    <svg x-show="escaneando" x-cloak class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span x-text="escaneando ? 'Escaneando...' : 'Escanear'"></span>
+                                </button>
+                                <label class="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium text-sm flex items-center justify-center gap-2 cursor-pointer">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                    Selecionar
+                                    <input type="file" x-ref="fileInput" name="arquivo"
+                                        @change="arquivo = $event.target.files[0]"
+                                        accept=".pdf,.jpg,.jpeg,.png" class="hidden" required>
+                                </label>
+                            </div>
+                            <div x-show="arquivo" class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-blue-700 dark:text-blue-300">
+                                <span class="font-medium">Selecionado:</span> <span x-text="arquivo ? arquivo.name : ''"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 mt-5">
+                        <button type="submit"
+                            class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium text-sm">
+                            Anexar
+                        </button>
+                        <button type="button" @click="modalAberto = false"
+                            class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal "Mais Páginas?" -->
+        <div x-show="modalMaisPaginas" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6 text-center">
+                <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Mais páginas?</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    Deseja adicionar mais páginas ao documento <strong class="text-gray-900 dark:text-white" x-text="grupoMaisPaginas"></strong>?
+                </p>
+                <div class="flex gap-3">
+                    <button type="button" @click="simMaisPaginas()"
+                        class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition font-medium text-sm">
+                        Sim, adicionar página
+                    </button>
+                    <button type="button" @click="modalMaisPaginas = false"
+                        class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition text-sm">
+                        Não, concluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Documentos Já Anexados -->
     @if($pedido->documentos->count() > 0)
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
@@ -388,7 +569,7 @@
         console.error('Asprise Scanner não foi carregado. Verifique se o arquivo scanner.js está acessível.');
     }
 
-    // Função Alpine.js para o formulário de scanner
+    // Função Alpine.js para o formulário de scanner (módulos obrigatórios)
     function scannerForm() {
         return {
             arquivo: null,
@@ -463,6 +644,110 @@
 
                 return new Blob(byteArrays, {
                     type: contentType
+                });
+            }
+        };
+    }
+
+    // Função Alpine.js para "Outros Documentos" (multi-página)
+    function outrosDocumentos() {
+        return {
+            modalAberto: false,
+            modalMaisPaginas: false,
+            titulo: 'Novo Documento',
+            grupo: '',
+            grupoFixo: false,
+            grupoMaisPaginas: '',
+            arquivo: null,
+            escaneando: false,
+
+            init() {
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('mais_paginas') === '1') {
+                    const g = params.get('grupo');
+                    if (g) {
+                        this.grupoMaisPaginas = decodeURIComponent(g);
+                        this.modalMaisPaginas = true;
+                        // Limpar param da URL sem recarregar
+                        window.history.replaceState({}, '', window.location.pathname + '#outros-documentos');
+                    }
+                }
+            },
+
+            abrirNovo() {
+                this.titulo = 'Novo Documento';
+                this.grupo = '';
+                this.grupoFixo = false;
+                this.arquivo = null;
+                this.modalAberto = true;
+            },
+
+            adicionarPagina(g) {
+                this.titulo = 'Adicionar Página — ' + g;
+                this.grupo = g;
+                this.grupoFixo = true;
+                this.arquivo = null;
+                this.modalAberto = true;
+            },
+
+            simMaisPaginas() {
+                this.modalMaisPaginas = false;
+                this.adicionarPagina(this.grupoMaisPaginas);
+            },
+
+            iniciarScanner() {
+                if (typeof scanner === 'undefined') {
+                    alert('Biblioteca do scanner não está carregada. Use "Selecionar".');
+                    return;
+                }
+
+                this.escaneando = true;
+
+                scanner.scan((successful, mesg, response) => {
+                    this.escaneando = false;
+
+                    if (!successful) {
+                        alert('Erro ao escanear: ' + mesg);
+                        return;
+                    }
+
+                    const images = scanner.getScannedImages ? scanner.getScannedImages(response, true, false) : [];
+
+                    if (images && images.length > 0) {
+                        const base64Data = images[0].src.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
+                        const byteCharacters = atob(base64Data);
+                        const byteArrays = [];
+                        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                            const slice = byteCharacters.slice(offset, offset + 512);
+                            const byteNumbers = new Array(slice.length);
+                            for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i);
+                            byteArrays.push(new Uint8Array(byteNumbers));
+                        }
+                        const blob = new Blob(byteArrays, {
+                            type: images[0].mimeType || 'image/jpeg'
+                        });
+                        const file = new File([blob], 'scan_' + Date.now() + '.jpg', {
+                            type: blob.type
+                        });
+
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        this.$refs.fileInput.files = dataTransfer.files;
+                        this.arquivo = file;
+                    } else {
+                        alert('Nenhuma imagem foi escaneada.');
+                    }
+                }, {
+                    output_settings: [{
+                        type: 'return-base64',
+                        format: 'jpg',
+                        quality: 92
+                    }],
+                    use_asprise_dialog: true,
+                    show_scanner_ui: true,
+                    resolution: 300,
+                    page_size: 'auto',
+                    pixel_type: 'color'
                 });
             }
         };

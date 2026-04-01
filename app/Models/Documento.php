@@ -13,6 +13,7 @@ class Documento extends Model
     protected $fillable = [
         'pedido_id',
         'tipo_documento',
+        'grupo',
         'arquivo_nome',
         'arquivo_path',
         'mime_type',
