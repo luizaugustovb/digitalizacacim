@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Convenio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -93,22 +94,31 @@ class ConvenioController extends Controller implements HasMiddleware
     }
 
     /**
-     * Excluir convênio
+     * Excluir convênio e todos os pedidos vinculados
      */
     public function destroy(Convenio $convenio)
     {
-        // Verificar se há pedidos vinculados
-        if ($convenio->pedidos()->count() > 0) {
-            return redirect()
-                ->route('convenios.index')
-                ->with('error', 'Não é possível excluir este convênio pois existem pedidos vinculados a ele.');
-        }
+        DB::transaction(function () use ($convenio) {
+            foreach ($convenio->pedidos()->withTrashed()->get() as $pedido) {
+                // Apagar arquivos físicos e registros de documentos
+                foreach ($pedido->documentos()->withTrashed()->get() as $doc) {
+                    if ($doc->arquivo_path) {
+                        Storage::delete($doc->arquivo_path);
+                    }
+                    $doc->forceDelete();
+                }
 
-        $convenio->delete();
+                $pedido->pendencias()->delete();
+                $pedido->timelineLogs()->delete();
+                $pedido->forceDelete();
+            }
+
+            $convenio->delete();
+        });
 
         return redirect()
             ->route('convenios.index')
-            ->with('success', 'Convênio excluído com sucesso!');
+            ->with('success', 'Convênio e todos os pedidos vinculados foram excluídos com sucesso!');
     }
 
     /**

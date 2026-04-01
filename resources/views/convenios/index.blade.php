@@ -1,13 +1,12 @@
-@extends('layouts.app')
+@extends('layouts.main')
+
+@section('page-title', 'Convênios')
 
 @section('content')
-<div class="container mx-auto px-4 py-8 max-w-7xl">
+<div class="max-w-7xl mx-auto space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Convênios</h1>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Gerencie os convênios médicos do sistema</p>
-        </div>
+    <div class="flex justify-between items-center">
+        <p class="text-sm text-gray-600 dark:text-gray-400">Gerencie os convênios médicos do sistema</p>
         <div class="flex gap-3">
             <button onclick="importarConvenios()"
                 class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
@@ -26,21 +25,8 @@
         </div>
     </div>
 
-    <!-- Mensagens -->
-    @if(session('success'))
-    <div class="mb-6 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 rounded-lg">
-        {{ session('success') }}
-    </div>
-    @endif
-
-    @if(session('error'))
-    <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded-lg">
-        {{ session('error') }}
-    </div>
-    @endif
-
     @if(session('erros_importacao'))
-    <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 rounded-lg">
+    <div class="p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 rounded-lg">
         <p class="font-semibold mb-2">Erros durante a importação:</p>
         <ul class="list-disc list-inside text-sm">
             @foreach(session('erros_importacao') as $erro)
@@ -123,7 +109,7 @@
                         </form>
                         @endif
                         <form action="{{ route('convenios.destroy', $convenio) }}" method="POST" class="inline"
-                            onsubmit="return confirm('Tem certeza que deseja excluir este convênio?')">
+                            onsubmit="return confirm('Tem certeza que deseja excluir este convênio?\n\nATENÇÃO: Todos os pedidos e documentos vinculados a ele também serão excluídos permanentemente!')">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
