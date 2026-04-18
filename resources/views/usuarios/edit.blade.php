@@ -2,7 +2,7 @@
 
 @section('page-title', 'Editar Usuário')
 
-@section('content')
+@section('page-content')
 <div class="max-w-4xl mx-auto space-y-6">
     <!-- Cabeçalho -->
     <div class="flex items-center gap-4">

@@ -2,7 +2,7 @@
 
 @section('page-title', 'Conferir Pedido #' . $pedido->codigo_pedido)
 
-@section('content')
+@section('page-content')
 <div class="space-y-6">
     <!-- Cabeçalho com Navegação -->
     <div class="flex justify-between items-center">

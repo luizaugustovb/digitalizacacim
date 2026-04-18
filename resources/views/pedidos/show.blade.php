@@ -2,7 +2,7 @@
 
 @section('page-title', 'Detalhes do Pedido')
 
-@section('content')
+@section('page-content')
 <div x-data="{ showConfirmModal: false, confirmAction: null }" class="max-w-7xl mx-auto space-y-6">
     <!-- Cabeçalho -->
     <div class="flex items-center justify-between">

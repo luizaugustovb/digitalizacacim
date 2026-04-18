@@ -2,7 +2,7 @@
 
 @section('page-title', 'Detalhes da Importação')
 
-@section('content')
+@section('page-content')
 <div class="max-w-6xl mx-auto space-y-6">
     <!-- Cabeçalho -->
     <div class="flex items-center justify-between">
