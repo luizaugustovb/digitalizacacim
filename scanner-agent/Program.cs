@@ -77,8 +77,9 @@ internal static class Program
         }
         catch (Exception exception)
         {
+            AgentDiagnostics.Log("Falha na digitalização", exception);
             MessageBox.Show(
-                $"Não foi possível digitalizar o documento.\n\n{exception.Message}",
+                $"Não foi possível digitalizar o documento.\n\n{exception.GetBaseException().Message}\n\nDiagnóstico: {AgentDiagnostics.LogPath}",
                 "Digitalização CACIM",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
@@ -213,6 +214,28 @@ internal sealed record ScanRequest(string SessionId, string Token, Uri UploadUrl
 }
 
 [SupportedOSPlatform("windows")]
+internal static class AgentDiagnostics
+{
+    public static string LogPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "DigitalizacaoCACIM",
+        "ScannerAgent",
+        "diagnostico.log");
+
+    public static void Log(string message, Exception? exception = null)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(LogPath)!);
+
+        var details = $"{DateTimeOffset.Now:O} | {message} | Processo {(Environment.Is64BitProcess ? "x64" : "x86")}";
+        if (exception is not null) {
+            details += Environment.NewLine + exception;
+        }
+
+        File.AppendAllText(LogPath, details + Environment.NewLine + Environment.NewLine);
+    }
+}
+
+[SupportedOSPlatform("windows")]
 internal static class TwainScanner
 {
     public static string AcquirePng()
@@ -289,6 +312,15 @@ internal static class TwainScanner
                 _messageLoopHook = new WindowsFormsMessageLoopHook(Handle);
                 _session.Open(_messageLoopHook);
 
+                var sources = _session.GetSources().Select(source => source.Name).ToArray();
+                AgentDiagnostics.Log($"Fontes TWAIN encontradas: {string.Join(", ", sources)}");
+
+                if (sources.Length == 0)
+                {
+                    throw new InvalidOperationException(
+                        "Nenhuma fonte TWAIN foi encontrada para esta arquitetura do agente.");
+                }
+
                 var source = _session.ShowSourceSelector();
                 if (source is null)
                 {
@@ -300,6 +332,7 @@ internal static class TwainScanner
             }
             catch (Exception exception)
             {
+                AgentDiagnostics.Log("Falha ao abrir fonte TWAIN", exception);
                 CompleteWithError(new InvalidOperationException(
                     "Não foi possível abrir um driver TWAIN. Confirme que o driver ISIS/TWAIN da Canon está instalado.",
                     exception));
