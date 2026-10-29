@@ -302,7 +302,15 @@ internal static class TwainScanner
         {
             try
             {
-                _session = new TwainSession(DataGroups.Image | DataGroups.Control);
+                var applicationIdentity = TWIdentity.Create(
+                    DataGroups.Image | DataGroups.Control,
+                    new Version(1, 0),
+                    "CACIM",
+                    "Digitalização CACIM",
+                    "Agente de Digitalização CACIM",
+                    "Agente Windows para scanners TWAIN"
+                );
+                _session = new TwainSession(applicationIdentity);
                 _session.DataTransferred += OnDataTransferred;
                 _session.SourceDisabled += OnSourceDisabled;
                 _session.TransferError += (_, _) => CompleteWithError(
