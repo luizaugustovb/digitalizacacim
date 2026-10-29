@@ -22,3 +22,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/scanner-agent/bin
+/scanner-agent/obj
+/scanner-agent/publish

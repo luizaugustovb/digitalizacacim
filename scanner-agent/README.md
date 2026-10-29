@@ -1,0 +1,49 @@
+# Agente Windows de Digitalização
+
+Este agente substitui o componente Asprise no fluxo de digitalização do sistema. Ele usa a interface WIA instalada no Windows, abre a janela nativa do driver e envia o arquivo diretamente ao pedido e tipo de documento escolhidos no sistema.
+
+## Requisitos da estação
+
+- Windows 10 ou Windows 11 de 64 bits.
+- Driver WIA do scanner instalado e funcionando no aplicativo **Digitalizar** do Windows.
+- .NET 8 Desktop Runtime x64.
+- A aplicação web deve ser acessada por HTTPS em produção. O agente só aceita envio HTTP para `localhost`, impedindo o envio de documentos e autorizações temporárias por uma rede não criptografada.
+
+O piloto gera um PNG por operação de digitalização. O driver pode apresentar sua própria tela para escolher origem, resolução e alimentador automático.
+
+## Publicação e instalação
+
+Na máquina de desenvolvimento:
+
+```powershell
+cd scanner-agent
+.\publish-agent.ps1
+```
+
+Copie a pasta `publish` para a estação que possui o scanner. Na estação, execute:
+
+```powershell
+.\install-agent.ps1
+```
+
+O instalador copia o executável para o perfil do usuário e registra o protocolo `digitalizacacim-scanner://` apenas para esse usuário.
+
+## Uso
+
+1. Abra um pedido pendente e escolha **Escanear pelo Windows** no documento desejado.
+2. Autorize o navegador a abrir o Agente de Digitalização CACIM, se solicitado.
+3. Na janela do Windows, selecione o scanner e digitalize.
+4. O agente anexa o PNG ao pedido e a página atualiza automaticamente.
+
+Cada operação usa uma autorização única válida por cinco minutos. O agente não pode escolher outro pedido nem outro tipo de documento.
+
+## Diagnóstico
+
+Se a janela do scanner não abrir:
+
+1. Execute o aplicativo **Digitalizar** do Windows e confirme que o dispositivo aparece.
+2. Reinstale/atualize o driver WIA do fabricante.
+3. Execute novamente `DigitalizacaoCacim.ScannerAgent.exe --install`.
+4. Confirme que o sistema está aberto por HTTPS e que a estação tem acesso ao servidor.
+
+O upload manual por **Selecionar Arquivo** continua disponível se o scanner estiver indisponível.

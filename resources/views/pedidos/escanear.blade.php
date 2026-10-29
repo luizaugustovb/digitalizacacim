@@ -147,7 +147,10 @@
 
             @if(!$jaAnexado)
             <form method="POST" action="{{ route('documentos.upload') }}" enctype="multipart/form-data"
-                x-data="scannerForm()">
+                x-data="scannerForm({
+                    sessionUrl: @js(route('scanner-sessions.store', $pedido)),
+                    documentType: @js($doc['tipo'])
+                })">
                 @csrf
                 <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
                 <input type="hidden" name="tipo_documento" value="{{ $doc['tipo'] }}">
@@ -165,7 +168,7 @@
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span x-text="escaneando ? 'Escaneando...' : 'Escanear Agora'"></span>
+                            <span x-text="escaneando ? 'Aguardando scanner...' : 'Escanear pelo Windows'"></span>
                         </button>
                         <label class="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium text-sm flex items-center justify-center gap-2 cursor-pointer">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,6 +188,8 @@
                         <span class="font-medium">Arquivo selecionado:</span>
                         <span x-text="arquivo ? arquivo.name : ''"></span>
                     </div>
+
+                    <p x-show="mensagem" x-text="mensagem" class="text-xs text-gray-600 dark:text-gray-300"></p>
 
                     <button type="submit"
                         class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium text-sm flex items-center justify-center gap-2">
@@ -536,92 +541,90 @@
 @endpush
 
 @push('scripts')
-<script src="{{ asset('js/scanner.js') }}" type="text/javascript"></script>
 <script>
-    // Configurar Asprise Scanner
-    if (typeof scanner !== 'undefined') {
-        scanner.setLicenseKey(""); // Versão gratuita/trial
-        console.log('Asprise Scanner carregado com sucesso!');
-    } else {
-        console.error('Asprise Scanner não foi carregado. Verifique se o arquivo scanner.js está acessível.');
+    const scannerSessionUrl = @json(route('scanner-sessions.store', $pedido));
+
+    async function criarSessaoScanner(tipoDocumento, grupo = null) {
+        const response = await fetch(scannerSessionUrl, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({
+                tipo_documento: tipoDocumento,
+                grupo: grupo,
+            }),
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(payload.message || 'Não foi possível iniciar a digitalização.');
+        }
+
+        return payload;
     }
 
-    // Função Alpine.js para o formulário de scanner (módulos obrigatórios)
-    function scannerForm() {
+    function acompanharSessaoScanner(statusUrl, onComplete, onError) {
+        const interval = window.setInterval(async () => {
+            try {
+                const response = await fetch(statusUrl, {
+                    headers: { 'Accept': 'application/json' },
+                });
+                const session = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(session.message || 'Não foi possível consultar a digitalização.');
+                }
+
+                if (session.status === 'CONCLUIDA') {
+                    window.clearInterval(interval);
+                    onComplete();
+                }
+
+                if (session.status === 'EXPIRADA' || session.status === 'ERRO') {
+                    window.clearInterval(interval);
+                    onError(session.erro || 'A digitalização não foi concluída.');
+                }
+            } catch (error) {
+                window.clearInterval(interval);
+                onError(error.message);
+            }
+        }, 2000);
+    }
+
+    function abrirAgenteScanner(session) {
+        window.location.href = session.launch_url;
+    }
+
+    function scannerForm(options) {
         return {
             arquivo: null,
             escaneando: false,
+            mensagem: '',
 
-            iniciarScanner() {
-                console.log('Iniciando scanner...');
-
-                if (typeof scanner === 'undefined') {
-                    alert('Biblioteca do scanner não está carregada. Use a opção Selecionar Arquivo.');
-                    return;
-                }
-
+            async iniciarScanner() {
                 this.escaneando = true;
+                this.mensagem = 'Abrindo o agente de digitalização...';
 
-                scanner.scan((successful, mesg, response) => {
+                try {
+                    const session = await criarSessaoScanner(options.documentType);
+                    abrirAgenteScanner(session);
+                    this.mensagem = 'Digitalize no agente Windows. A página será atualizada ao finalizar.';
+
+                    acompanharSessaoScanner(
+                        session.status_url,
+                        () => window.location.reload(),
+                        (message) => {
+                            this.escaneando = false;
+                            this.mensagem = message;
+                        }
+                    );
+                } catch (error) {
                     this.escaneando = false;
-
-                    if (!successful) {
-                        console.error('Erro ao escanear:', mesg);
-                        alert('Erro ao escanear: ' + mesg);
-                        return;
-                    }
-
-                    const images = (typeof scanner !== 'undefined' && scanner.getScannedImages) ?
-                        scanner.getScannedImages(response, true, false) : [];
-
-                    if (images && images.length > 0) {
-                        const base64Data = images[0].src.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
-                        const blob = this.base64ToBlob(base64Data, images[0].mimeType || 'image/jpeg');
-                        const file = new File([blob], 'scan_' + Date.now() + '.jpg', {
-                            type: images[0].mimeType || 'image/jpeg'
-                        });
-
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(file);
-                        this.$refs.fileInput.files = dataTransfer.files;
-                        this.arquivo = file;
-
-                        alert('Documento escaneado com sucesso!');
-                    } else {
-                        alert('Nenhuma imagem foi escaneada.');
-                    }
-                }, {
-                    output_settings: [{
-                        type: 'return-base64',
-                        format: 'jpg',
-                        quality: 92
-                    }],
-                    use_asprise_dialog: true,
-                    show_scanner_ui: true,
-                    resolution: 300,
-                    page_size: 'auto',
-                    pixel_type: 'color'
-                });
-            },
-
-            base64ToBlob(base64, contentType) {
-                const byteCharacters = atob(base64);
-                const byteArrays = [];
-
-                for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-                    const slice = byteCharacters.slice(offset, offset + 512);
-                    const byteNumbers = new Array(slice.length);
-
-                    for (let i = 0; i < slice.length; i++) {
-                        byteNumbers[i] = slice.charCodeAt(i);
-                    }
-
-                    byteArrays.push(new Uint8Array(byteNumbers));
+                    this.mensagem = error.message;
                 }
-
-                return new Blob(byteArrays, {
-                    type: contentType
-                });
             }
         };
     }
@@ -673,60 +676,30 @@
                 this.adicionarPagina(this.grupoMaisPaginas);
             },
 
-            iniciarScanner() {
-                if (typeof scanner === 'undefined') {
-                    alert('Biblioteca do scanner não está carregada. Use "Selecionar".');
+            async iniciarScanner() {
+                if (!this.grupo.trim()) {
+                    alert('Informe o título do documento antes de digitalizar.');
                     return;
                 }
 
                 this.escaneando = true;
 
-                scanner.scan((successful, mesg, response) => {
-                    this.escaneando = false;
+                try {
+                    const session = await criarSessaoScanner('Outros Documentos', this.grupo);
+                    abrirAgenteScanner(session);
 
-                    if (!successful) {
-                        alert('Erro ao escanear: ' + mesg);
-                        return;
-                    }
-
-                    const images = scanner.getScannedImages ? scanner.getScannedImages(response, true, false) : [];
-
-                    if (images && images.length > 0) {
-                        const base64Data = images[0].src.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
-                        const byteCharacters = atob(base64Data);
-                        const byteArrays = [];
-                        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-                            const slice = byteCharacters.slice(offset, offset + 512);
-                            const byteNumbers = new Array(slice.length);
-                            for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i);
-                            byteArrays.push(new Uint8Array(byteNumbers));
+                    acompanharSessaoScanner(
+                        session.status_url,
+                        () => window.location.reload(),
+                        (message) => {
+                            this.escaneando = false;
+                            alert(message);
                         }
-                        const blob = new Blob(byteArrays, {
-                            type: images[0].mimeType || 'image/jpeg'
-                        });
-                        const file = new File([blob], 'scan_' + Date.now() + '.jpg', {
-                            type: blob.type
-                        });
-
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(file);
-                        this.$refs.fileInput.files = dataTransfer.files;
-                        this.arquivo = file;
-                    } else {
-                        alert('Nenhuma imagem foi escaneada.');
-                    }
-                }, {
-                    output_settings: [{
-                        type: 'return-base64',
-                        format: 'jpg',
-                        quality: 92
-                    }],
-                    use_asprise_dialog: true,
-                    show_scanner_ui: true,
-                    resolution: 300,
-                    page_size: 'auto',
-                    pixel_type: 'color'
-                });
+                    );
+                } catch (error) {
+                    this.escaneando = false;
+                    alert(error.message);
+                }
             }
         };
     }

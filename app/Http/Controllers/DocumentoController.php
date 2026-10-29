@@ -5,18 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Documento;
 use App\Models\Pedido;
 use App\Models\TimelineLog;
+use App\Services\DocumentoUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class DocumentoController extends Controller
 {
     use AuthorizesRequests;
 
-    public function upload(Request $request)
+    public function upload(Request $request, DocumentoUploadService $documentoUploadService)
     {
         $request->validate([
             'pedido_id' => 'required|exists:pedidos,id',
@@ -41,60 +41,13 @@ class DocumentoController extends Controller
 
         DB::beginTransaction();
         try {
-            $arquivo = $request->file('arquivo');
-            $extensao = $arquivo->getClientOriginalExtension();
-
-            // Gerar nome do arquivo: numeroPedido_nomePaciente_dataDoDia_tipoArquivo.extensao
-            $data = now()->format('Ymd');
-            $nomePaciente = Str::slug($pedido->nome_paciente);
-            $tipoDoc = Str::slug($request->tipo_documento);
-            $codigoPedido = $pedido->codigo_pedido ?? $pedido->id;
-            $nomeArquivo = "{$codigoPedido}_{$nomePaciente}_{$data}_{$tipoDoc}.{$extensao}";
-
-            // Caminho: storage/app/guias/YYYY/MM/DD/CONVENIO/
-            $ano = now()->format('Y');
-            $mes = now()->format('m');
-            $dia = now()->format('d');
-
-            // Obter nome do convênio para a pasta
-            $convenioSlug = 'sem-convenio';
-            if ($pedido->convenio) {
-                $convenioSlug = Str::slug($pedido->convenio->nome);
-            }
-
-            $caminhoRelativo = "guias/{$ano}/{$mes}/{$dia}/{$convenioSlug}";
-
-            // Salvar arquivo no storage padrão do Laravel
-            $caminhoCompleto = Storage::putFileAs(
-                $caminhoRelativo,
-                $arquivo,
-                $nomeArquivo
+            $documentoUploadService->armazenar(
+                $pedido,
+                $request->file('arquivo'),
+                $request->tipo_documento,
+                $request->grupo,
+                auth()->id(),
             );
-
-            // Gerar hash do arquivo
-            $hashArquivo = hash_file('sha256', $arquivo->getRealPath());
-
-            // Criar registro no banco
-            $documento = Documento::create([
-                'pedido_id' => $pedido->id,
-                'tipo_documento' => $request->tipo_documento,
-                'grupo' => $request->tipo_documento === 'Outros Documentos' ? $request->grupo : null,
-                'arquivo_nome' => $nomeArquivo,
-                'arquivo_path' => $caminhoCompleto,
-                'tamanho' => $arquivo->getSize(),
-                'mime_type' => $arquivo->getMimeType(),
-                'hash' => $hashArquivo,
-                'criado_por' => auth()->id(),
-            ]);
-
-            // Log na timeline
-            TimelineLog::create([
-                'pedido_id' => $pedido->id,
-                'user_id' => auth()->id(),
-                'acao' => 'DOCUMENTO_ADICIONADO',
-                'descricao' => "Documento adicionado: {$request->tipo_documento}",
-                'detalhes' => $nomeArquivo,
-            ]);
 
             DB::commit();
 

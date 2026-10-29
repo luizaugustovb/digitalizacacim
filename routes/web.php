@@ -7,6 +7,7 @@ use App\Http\Controllers\DocumentoController;
 use App\Http\Controllers\ConferenciaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ConfiguracaoController;
+use App\Http\Controllers\ScannerSessionController;
 use Illuminate\Support\Facades\Route;
 
 // Rotas públicas
@@ -38,6 +39,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/pedidos', [PedidoController::class, 'store'])->name('pedidos.store');
     Route::get('/pedidos/{pedido}', [PedidoController::class, 'show'])->name('pedidos.show');
     Route::get('/pedidos/{pedido}/escanear', [PedidoController::class, 'escanear'])->name('pedidos.escanear');
+    Route::post('/pedidos/{pedido}/scanner-sessions', [ScannerSessionController::class, 'store'])->name('scanner-sessions.store');
+    Route::get('/scanner-sessions/{scannerSession}', [ScannerSessionController::class, 'show'])->name('scanner-sessions.show');
     Route::put('/pedidos/{pedido}/enviar', [PedidoController::class, 'enviar'])->name('pedidos.enviar');
     Route::put('/pedidos/{pedido}/aprovar', [PedidoController::class, 'aprovar'])->name('pedidos.aprovar');
     Route::get('/pedidos/{pedido}/devolver', [PedidoController::class, 'showDevolver'])->name('pedidos.devolver');
