@@ -20,13 +20,19 @@ cd scanner-agent
 .\publish-agent.ps1
 ```
 
-Copie a pasta `publish` para a estação que possui o scanner. Na estação, execute:
+Publique o arquivo `publish/DigitalizacaoCacim.ScannerAgent.exe` como um asset de release. A tela **Configurações > Scanner** do sistema direciona o administrador para esse arquivo.
+
+Na estação, basta baixar e dar duplo clique em `DigitalizacaoCacim.ScannerAgent.exe`. O próprio executável:
+
+- copia-se para `%LocalAppData%\DigitalizacaoCACIM\ScannerAgent`;
+- registra o protocolo `digitalizacacim-scanner://` para o usuário atual;
+- não exige instalação do .NET.
+
+Também é possível executar:
 
 ```powershell
-.\install-agent.ps1
+.\DigitalizacaoCacim.ScannerAgent.exe --install
 ```
-
-O instalador copia o executável para o perfil do usuário e registra o protocolo `digitalizacacim-scanner://` apenas para esse usuário.
 
 ## Uso
 

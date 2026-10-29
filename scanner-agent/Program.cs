@@ -11,15 +11,16 @@ namespace DigitalizacaoCacim.ScannerAgent;
 internal static class Program
 {
     private const string Protocol = "digitalizacacim-scanner";
+    private const string ExecutableName = "DigitalizacaoCacim.ScannerAgent.exe";
 
     [STAThread]
     private static async Task Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
 
-        if (args.Length == 1 && string.Equals(args[0], "--install", StringComparison.OrdinalIgnoreCase))
+        if (args.Length == 0 || (args.Length == 1 && string.Equals(args[0], "--install", StringComparison.OrdinalIgnoreCase)))
         {
-            RegisterProtocol();
+            InstallAgent();
             MessageBox.Show(
                 "Agente de digitalização instalado para o usuário atual.",
                 "Digitalização CACIM",
@@ -79,10 +80,37 @@ internal static class Program
         }
     }
 
-    private static void RegisterProtocol()
+    private static void InstallAgent()
     {
-        var executable = Environment.ProcessPath
+        var source = Environment.ProcessPath
             ?? throw new InvalidOperationException("Não foi possível identificar o executável do agente.");
+        var installationDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "DigitalizacaoCACIM",
+            "ScannerAgent");
+        var destination = Path.Combine(installationDirectory, ExecutableName);
+
+        Directory.CreateDirectory(installationDirectory);
+
+        if (!string.Equals(source, destination, StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                File.Copy(source, destination, true);
+            }
+            catch (IOException exception)
+            {
+                throw new InvalidOperationException(
+                    "Feche qualquer janela do Agente de Digitalização CACIM e execute este instalador novamente.",
+                    exception);
+            }
+        }
+
+        RegisterProtocol(destination);
+    }
+
+    private static void RegisterProtocol(string executable)
+    {
 
         using var key = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{Protocol}")
             ?? throw new InvalidOperationException("Não foi possível registrar o protocolo do agente.");

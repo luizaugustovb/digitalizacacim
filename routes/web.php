@@ -79,6 +79,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:ADMIN'])->group(function () {
         Route::get('/configuracoes', [ConfiguracaoController::class, 'index'])->name('configuracoes.index');
         Route::put('/configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
+        Route::get('/configuracoes/scanner-agente/download', [ConfiguracaoController::class, 'downloadScannerAgent'])->name('configuracoes.scanner.download');
 
         // Pendências
         Route::prefix('configuracoes/pendencias')->name('configuracoes.pendencias.')->group(function () {

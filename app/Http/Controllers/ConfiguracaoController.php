@@ -68,6 +68,11 @@ class ConfiguracaoController extends Controller implements HasMiddleware
         return view('configuracoes.index', compact('config'));
     }
 
+    public function downloadScannerAgent()
+    {
+        return redirect()->away(config('scanner.agent_download_url'));
+    }
+
     /**
      * Atualiza as configurações
      */

@@ -53,6 +53,14 @@
                         </svg>
                         Integração
                     </button>
+                    <button @click="tab = 'scanner'"
+                        :class="tab === 'scanner' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 3h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
+                        </svg>
+                        Scanner
+                    </button>
                     <button @click="tab = 'notificacoes'"
                         :class="tab === 'notificacoes' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
@@ -359,6 +367,34 @@
                 </div>
 
                 <!-- Tab: Notificações -->
+                <div x-show="tab === 'scanner'" class="space-y-6">
+                    <div class="rounded-lg border border-blue-200 bg-blue-50 p-5 dark:border-blue-800 dark:bg-blue-900/20">
+                        <div class="flex items-start gap-3">
+                            <svg class="mt-0.5 h-6 w-6 flex-shrink-0 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 3h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
+                            </svg>
+                            <div>
+                                <h3 class="font-semibold text-blue-900 dark:text-blue-200">Agente de Digitalização CACIM</h3>
+                                <p class="mt-1 text-sm text-blue-800 dark:text-blue-300">
+                                    Baixe e execute o instalador nesta estação. Ele registra o scanner para o usuário atual, sem exigir instalação do .NET.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="{{ route('configuracoes.scanner.download') }}"
+                        class="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-3 font-medium text-white transition hover:bg-purple-700">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Baixar e instalar agente do scanner
+                    </a>
+
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <p>Após o download, dê duplo clique no arquivo. Para digitalizar, o scanner precisa ter o driver TWAIN/ISIS do fabricante instalado.</p>
+                    </div>
+                </div>
+
                 <div x-show="tab === 'notificacoes'" class="space-y-4">
                     <div>
                         <label class="flex items-center">
