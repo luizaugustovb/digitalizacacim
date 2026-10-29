@@ -35,8 +35,17 @@ class ImportController extends Controller implements HasMiddleware
     public function show(ImportJob $job)
     {
         $erros = json_decode($job->detalhes_erros, true) ?? [];
+        $temDetalhes = $job->itens()->exists();
+        $importados = $job->itens()
+            ->where('resultado', 'importado')
+            ->latest('id')
+            ->paginate(20, ['*'], 'importados_page');
+        $ignorados = $job->itens()
+            ->where('resultado', 'ignorado')
+            ->latest('id')
+            ->paginate(20, ['*'], 'ignorados_page');
 
-        return view('import.show', compact('job', 'erros'));
+        return view('import.show', compact('job', 'erros', 'temDetalhes', 'importados', 'ignorados'));
     }
 
     /**

@@ -69,8 +69,10 @@ class SoftlabMapping extends Model
     // Buscar convênio pelo código do Softlab (cod_guia)
     public static function getConvenioByCodigo($codGuia)
     {
+        $codigo = $codGuia ? strtoupper(trim($codGuia)) : $codGuia;
+
         $mapping = self::where('tipo', 'convenio')
-            ->where('cod_softlab', $codGuia)
+            ->where('cod_softlab', $codigo)
             ->where('ativo', true)
             ->first();
 

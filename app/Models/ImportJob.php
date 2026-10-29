@@ -27,4 +27,9 @@ class ImportJob extends Model
         'ignorados' => 'integer',
         'erros' => 'integer',
     ];
+
+    public function itens()
+    {
+        return $this->hasMany(ImportJobItem::class);
+    }
 }

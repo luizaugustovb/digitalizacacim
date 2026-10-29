@@ -3,8 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Helpers\ConfigHelper;
+use App\Helpers\SoftlabConvenioImportFilter;
 use App\Models\Convenio;
 use App\Models\ImportJob;
+use App\Models\ImportJobItem;
 use App\Models\Pedido;
 use App\Models\Unidade;
 use App\Models\SoftlabMapping;
@@ -154,6 +156,7 @@ class ImportPedidosCommand extends Command
                     'codigo' => $pedidoLegado->codigo,
                     'erro' => $e->getMessage()
                 ];
+                $this->registrarItem('erro', $pedidoLegado, $e->getMessage());
             }
         }
 
@@ -168,6 +171,7 @@ class ImportPedidosCommand extends Command
             $existe = Pedido::where('codigo_pedido', $pedidoLegado->codigo)->exists();
             if ($existe) {
                 $this->skipped++;
+                $this->registrarItem('ignorado', $pedidoLegado, 'Pedido já existe no sistema.');
                 return;
             }
         }
@@ -176,6 +180,7 @@ class ImportPedidosCommand extends Command
         $codGuia = $pedidoLegado->observacoes ?? null;
         if (!$this->convenioPermitido($codGuia)) {
             $this->skipped++;
+            $this->registrarItem('ignorado', $pedidoLegado, 'Convênio não está habilitado para importação.');
             return;
         }
 
@@ -198,7 +203,7 @@ class ImportPedidosCommand extends Command
         }
 
         // Criar ou atualizar pedido
-        Pedido::updateOrCreate(
+        $pedido = Pedido::updateOrCreate(
             ['codigo_pedido' => $pedidoLegado->codigo],
             [
                 'codigo_paciente' => $pedidoLegado->codigo_paciente,
@@ -216,6 +221,26 @@ class ImportPedidosCommand extends Command
         );
 
         $this->imported++;
+        $this->registrarItem(
+            'importado',
+            $pedidoLegado,
+            $pedido->wasRecentlyCreated ? 'Pedido importado com sucesso.' : 'Pedido atualizado por reimportação forçada.',
+            $pedido
+        );
+    }
+
+    private function registrarItem(string $resultado, object $pedidoLegado, ?string $motivo = null, ?Pedido $pedido = null): void
+    {
+        ImportJobItem::create([
+            'import_job_id' => $this->importJob->id,
+            'resultado' => $resultado,
+            'codigo_pedido' => $pedidoLegado->codigo ?? null,
+            'codigo_paciente' => $pedidoLegado->codigo_paciente ?? null,
+            'nome_paciente' => $pedidoLegado->nome_paciente ?? null,
+            'convenio' => $pedidoLegado->observacoes ?? null,
+            'pedido_id' => $pedido?->id,
+            'motivo' => $motivo,
+        ]);
     }
 
     /**
@@ -225,7 +250,17 @@ class ImportPedidosCommand extends Command
     private function processarConvenio(string $codGuia): ?int
     {
         // Limpar e normalizar o nome do convênio
-        $nomeConvenio = trim(strtoupper($codGuia));
+        $nomeConvenio = SoftlabConvenioImportFilter::normalizar($codGuia);
+
+        if (SoftlabConvenioImportFilter::bloqueado($nomeConvenio)) {
+            return null;
+        }
+
+        $convenioMapeado = SoftlabMapping::getConvenioByCodigo($nomeConvenio);
+
+        if ($convenioMapeado) {
+            return $convenioMapeado->id;
+        }
 
         // Remover caracteres especiais e números para melhor match
         $nomeConvenioLimpo = preg_replace('/[0-9\s\-\.]+/', '', $nomeConvenio);
@@ -261,6 +296,18 @@ class ImportPedidosCommand extends Command
             }
         }
 
+        SoftlabMapping::updateOrCreate(
+            [
+                'tipo' => 'convenio',
+                'cod_softlab' => $nomeConvenio,
+            ],
+            [
+                'nome_softlab' => $convenio->nome,
+                'convenio_id' => $convenio->id,
+                'ativo' => true,
+            ]
+        );
+
         return $convenio->id;
     }
 
@@ -286,7 +333,7 @@ class ImportPedidosCommand extends Command
         }
 
         $raw = (string) ConfigHelper::get('importacao_convenios_permitidos', '');
-        $parts = preg_split('/[\s,;]+/', $raw) ?: [];
+        $parts = preg_split('/[,\r\n;]+/', $raw) ?: [];
 
         $this->conveniosPermitidos = array_values(array_filter(array_map(function ($item) {
             $item = strtoupper(trim($item));

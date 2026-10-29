@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Convenio;
+use App\Models\SoftlabMapping;
+use App\Helpers\SoftlabConvenioImportFilter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\QueryException;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -122,66 +126,97 @@ class ConvenioController extends Controller implements HasMiddleware
     }
 
     /**
-     * Importar convênios da tabela tipo_g do MySQL
+     * Importar convênios da tabela tipo_g do Softlab.
      */
     public function importar()
     {
         try {
-            // Conectar ao banco MySQL legado
-            $tiposGuia = DB::connection('mysql')
+            $tiposGuia = DB::connection('softlab')
                 ->table('tipo_g')
-                ->where('tipo_guia', 'G') // Apenas tipo G
+                ->select('cod_guia', 'nome_conv')
+                ->where('tipo_guia', 'G')
+                ->orderBy('nome_conv')
                 ->get();
-
-            if ($tiposGuia->isEmpty()) {
-                return redirect()
-                    ->route('convenios.index')
-                    ->with('error', 'Nenhum convênio encontrado na tabela tipo_g com tipo_guia = "G".');
-            }
-
-            $importados = 0;
-            $atualizados = 0;
-            $erros = [];
-
-            foreach ($tiposGuia as $tipo) {
-                try {
-                    // Verificar qual campo usar como nome (ajustar conforme estrutura da tabela)
-                    $nome = $tipo->descricao ?? $tipo->nome ?? $tipo->tipo_guia ?? 'Sem Nome';
-                    $codigo = $tipo->codigo ?? $tipo->id ?? strtoupper($nome);
-
-                    // Criar ou atualizar
-                    $convenio = Convenio::updateOrCreate(
-                        ['codigo' => $codigo],
-                        [
-                            'nome' => $nome,
-                            'observacoes' => 'Importado da tabela tipo_g',
-                            'ativo' => true,
-                        ]
-                    );
-
-                    if ($convenio->wasRecentlyCreated) {
-                        $importados++;
-                    } else {
-                        $atualizados++;
-                    }
-                } catch (\Exception $e) {
-                    $erros[] = "Erro ao importar: {$e->getMessage()}";
-                }
-            }
-
-            $mensagem = "✅ Importação concluída! {$importados} novos convênios, {$atualizados} atualizados.";
-            if (count($erros) > 0) {
-                $mensagem .= " ⚠️ " . count($erros) . " erros encontrados.";
-            }
+        } catch (QueryException $e) {
+            Log::error('Erro ao consultar convênios no Softlab', [
+                'message' => $e->getMessage(),
+            ]);
 
             return redirect()
                 ->route('convenios.index')
-                ->with('success', $mensagem)
-                ->with('erros_importacao', $erros);
-        } catch (\Exception $e) {
-            return redirect()
-                ->route('convenios.index')
-                ->with('error', 'Erro na importação: ' . $e->getMessage());
+                ->with('error', 'Não foi possível consultar os convênios no Softlab. Verifique a conexão configurada e tente novamente.');
         }
+
+        if ($tiposGuia->isEmpty()) {
+            return redirect()
+                ->route('convenios.index')
+                ->with('error', 'Nenhum convênio encontrado na tabela tipo_g com tipo_guia = "G".');
+        }
+
+        $importados = 0;
+        $atualizados = 0;
+        $erros = [];
+
+        foreach ($tiposGuia as $tipo) {
+            $nome = trim((string) $tipo->nome_conv);
+            $codigo = SoftlabConvenioImportFilter::normalizar($tipo->cod_guia);
+
+            if ($nome === '') {
+                $erros[] = 'Registro ignorado por não possuir código ou nome de convênio.';
+                continue;
+            }
+
+            if (SoftlabConvenioImportFilter::bloqueado($codigo)) {
+                continue;
+            }
+
+            try {
+                $convenio = Convenio::where('codigo', $codigo)->first();
+
+                if (!$convenio) {
+                    $convenio = Convenio::where('nome', $nome)->first();
+                }
+
+                if ($convenio) {
+                    $atualizados++;
+                } else {
+                    $convenio = Convenio::create([
+                        'codigo' => $codigo,
+                        'nome' => $nome,
+                        'observacoes' => 'Importado da tabela tipo_g do Softlab',
+                        'ativo' => true,
+                    ]);
+                    $importados++;
+                }
+
+                SoftlabMapping::updateOrCreate(
+                    [
+                        'tipo' => 'convenio',
+                        'cod_softlab' => $codigo,
+                    ],
+                    [
+                        'nome_softlab' => $nome,
+                        'convenio_id' => $convenio->id,
+                        'ativo' => true,
+                    ]
+                );
+            } catch (\Exception $e) {
+                Log::error('Erro ao importar convênio do Softlab', [
+                    'codigo' => $codigo,
+                    'message' => $e->getMessage(),
+                ]);
+                $erros[] = "Não foi possível importar o convênio {$codigo}.";
+            }
+        }
+
+        $mensagem = "✅ Importação concluída! {$importados} novos convênios, {$atualizados} atualizados.";
+        if (count($erros) > 0) {
+            $mensagem .= " ⚠️ " . count($erros) . " erros encontrados.";
+        }
+
+        return redirect()
+            ->route('convenios.index')
+            ->with('success', $mensagem)
+            ->with('erros_importacao', $erros);
     }
 }

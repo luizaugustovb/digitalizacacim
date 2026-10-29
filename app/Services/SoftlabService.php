@@ -271,7 +271,7 @@ class SoftlabService
     private function convenioPermitido(?string $codGuia): bool
     {
         $raw = (string) ConfigHelper::get('importacao_convenios_permitidos', '');
-        $parts = preg_split('/[\s,;]+/', $raw) ?: [];
+        $parts = preg_split('/[,\r\n;]+/', $raw) ?: [];
         $permitidos = array_values(array_filter(array_map(function ($item) {
             $item = strtoupper(trim($item));
             return $item === '' ? null : $item;

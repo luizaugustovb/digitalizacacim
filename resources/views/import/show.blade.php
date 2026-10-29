@@ -146,6 +146,80 @@
         </div>
     </div>
 
+    @if($temDetalhes)
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                Pedidos Importados ({{ number_format($job->importados, 0, ',', '.') }})
+            </h2>
+
+            @if($importados->isEmpty())
+            <p class="text-sm text-gray-600 dark:text-gray-400">Nenhum pedido importado neste job.</p>
+            @else
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-900">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Código</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Paciente</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Convênio</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach($importados as $item)
+                        <tr>
+                            <td class="px-3 py-2 text-sm text-gray-900 dark:text-white">{{ $item->codigo_pedido ?? '-' }}</td>
+                            <td class="px-3 py-2 text-sm text-gray-900 dark:text-white">{{ $item->nome_paciente ?? '-' }}</td>
+                            <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">{{ $item->convenio ?? '-' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">{{ $importados->withQueryString()->links() }}</div>
+            @endif
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                Pedidos Ignorados ({{ number_format($job->ignorados, 0, ',', '.') }})
+            </h2>
+
+            @if($ignorados->isEmpty())
+            <p class="text-sm text-gray-600 dark:text-gray-400">Nenhum pedido ignorado neste job.</p>
+            @else
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-900">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Código</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Paciente</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach($ignorados as $item)
+                        <tr>
+                            <td class="px-3 py-2 text-sm text-gray-900 dark:text-white">{{ $item->codigo_pedido ?? '-' }}</td>
+                            <td class="px-3 py-2 text-sm text-gray-900 dark:text-white">{{ $item->nome_paciente ?? '-' }}</td>
+                            <td class="px-3 py-2 text-sm text-gray-600 dark:text-gray-300">{{ $item->motivo ?? '-' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">{{ $ignorados->withQueryString()->links() }}</div>
+            @endif
+        </div>
+    </div>
+    @else
+    <div class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+            Este job foi executado antes do detalhamento por pedido. As próximas importações exibirão as listas de importados e ignorados.
+        </p>
+    </div>
+    @endif
+
     <!-- Lista de Erros -->
     @if(count($erros) > 0)
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
