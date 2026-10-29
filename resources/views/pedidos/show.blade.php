@@ -207,7 +207,7 @@
                                 </svg>
                             </a>
                             @can('update', $pedido)
-                            @if($pedido->status === 'PENDENTE')
+                            @if($pedidoPendente)
                             <form method="POST" action="{{ route('documentos.destroy', $documento) }}" class="inline">
                                 @csrf
                                 @method('DELETE')
@@ -287,7 +287,7 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ações</h2>
                 <div class="space-y-3">
-                    @if($pedido->status === 'PENDENTE')
+                    @if($pedidoPendente)
                     @can('update', $pedido)
                     <a href="{{ route('pedidos.escanear', $pedido) }}"
                         class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
