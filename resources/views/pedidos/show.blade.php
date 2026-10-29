@@ -3,6 +3,10 @@
 @section('page-title', 'Detalhes do Pedido')
 
 @section('page-content')
+@php
+    $pedidoPendente = strtoupper($pedido->status) === 'PENDENTE';
+    $documentosObrigatoriosPreenchidos = $pedido->temDocumentosObrigatorios();
+@endphp
 <div x-data="{ showConfirmModal: false, confirmAction: null }" class="max-w-7xl mx-auto space-y-6">
     <!-- Cabeçalho -->
     <div class="flex items-center justify-between">
@@ -135,7 +139,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Documentos</h2>
                     @can('update', $pedido)
-                    @if($pedido->status === 'PENDENTE')
+                    @if($pedidoPendente)
                     <a href="{{ route('pedidos.escanear', $pedido) }}"
                         class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,11 +294,12 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        Escanear Documentos
+                        Escanear
                     </a>
                     @endcan
 
                     @can('enviar', $pedido)
+                    @if($documentosObrigatoriosPreenchidos)
                     <form method="POST" action="{{ route('pedidos.enviar', $pedido) }}" id="enviarForm">
                         @csrf
                         @method('PUT')
@@ -307,6 +312,20 @@
                             Enviar para Conferência
                         </button>
                     </form>
+                    @else
+                    <div>
+                        <button type="button" disabled
+                            class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                            Enviar para Conferência
+                        </button>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Anexe todos os documentos obrigatórios para enviar.
+                        </p>
+                    </div>
+                    @endif
                     @endcan
                     @endif
 
@@ -336,18 +355,6 @@
                     </a>
                     @endcan
                     @endif
-
-                    @can('update', $pedido)
-                    @if($pedido->status === 'PENDENTE' || strtoupper($pedido->status) === 'PENDENTE')
-                    <a href="{{ route('pedidos.escanear', $pedido) }}"
-                        class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Escanear
-                    </a>
-                    @endif
-                    @endcan
 
                     <button type="button"
                         onclick="showTimeline({{ $pedido->id }})"
