@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Pedido;
 use App\Models\ScannerSession;
 use App\Services\DocumentoUploadService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -12,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class ScannerSessionController extends Controller
 {
+    use AuthorizesRequests;
+
     private const TIPOS_DOCUMENTO = [
         'Guia Médica',
         'Autorização/SADT',
