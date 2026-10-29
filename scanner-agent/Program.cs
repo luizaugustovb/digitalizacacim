@@ -1,6 +1,9 @@
 using System.Net.Http.Headers;
 using System.Runtime.Versioning;
+using System.Drawing.Imaging;
 using Microsoft.Win32;
+using NTwain;
+using NTwain.Data;
 
 namespace DigitalizacaoCacim.ScannerAgent;
 
@@ -42,7 +45,7 @@ internal static class Program
 
         try
         {
-            temporaryFile = WiaScanner.AcquirePng();
+            temporaryFile = TwainScanner.AcquirePng();
             await UploadAsync(request!, temporaryFile);
 
             MessageBox.Show(
@@ -170,48 +173,126 @@ internal sealed record ScanRequest(string SessionId, string Token, Uri UploadUrl
 }
 
 [SupportedOSPlatform("windows")]
-internal static class WiaScanner
+internal static class TwainScanner
 {
-    private const string WiaPngFormat = "{B96B3CAF-0728-11D3-9D7B-0000F81EF32}";
-
     public static string AcquirePng()
     {
-        var dialogType = Type.GetTypeFromProgID("WIA.CommonDialog")
-            ?? throw new InvalidOperationException(
-                "O Windows não encontrou o componente WIA. Instale o driver WIA do scanner e tente novamente.");
+        using var form = new TwainAcquisitionForm();
+        Application.Run(form);
 
-        dynamic dialog = Activator.CreateInstance(dialogType)
-            ?? throw new InvalidOperationException("Não foi possível iniciar o diálogo do scanner Windows.");
+        return form.GetResult();
+    }
 
-        try
+    private sealed class TwainAcquisitionForm : Form
+    {
+        private TwainSession? _session;
+        private WindowsFormsMessageLoopHook? _messageLoopHook;
+        private string? _filePath;
+        private Exception? _error;
+
+        public TwainAcquisitionForm()
         {
-            dynamic image = dialog.ShowAcquireImage(
-                0,
-                1,
-                0,
-                WiaPngFormat,
-                true,
-                true,
-                false);
-
-            if (image is null)
-            {
-                throw new OperationCanceledException();
-            }
-
-            var filePath = Path.Combine(Path.GetTempPath(), $"digitalizacacim-{Guid.NewGuid():N}.png");
-            image.SaveFile(filePath);
-
-            if (!File.Exists(filePath) || new FileInfo(filePath).Length == 0)
-            {
-                throw new InvalidOperationException("O scanner não retornou uma imagem válida.");
-            }
-
-            return filePath;
+            Opacity = 0;
+            ShowInTaskbar = false;
+            StartPosition = FormStartPosition.Manual;
+            Location = new Point(-32000, -32000);
         }
-        catch (System.Runtime.InteropServices.COMException exception) when ((uint)exception.HResult == 0x80210064)
+
+        public string GetResult()
         {
-            throw new OperationCanceledException();
+            if (_error is not null)
+            {
+                throw _error;
+            }
+
+            return _filePath ?? throw new OperationCanceledException();
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            BeginInvoke(StartScan);
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            try
+            {
+                if (_session?.IsSourceOpen == true)
+                {
+                    _session.CurrentSource.Close();
+                }
+
+                if (_session?.IsDsmOpen == true)
+                {
+                    _session.Close();
+                }
+            }
+            catch
+            {
+                // The driver can already have closed the source or manager.
+            }
+            base.OnFormClosed(e);
+        }
+
+        private void StartScan()
+        {
+            try
+            {
+                _session = new TwainSession(DataGroups.Image | DataGroups.Control);
+                _session.DataTransferred += OnDataTransferred;
+                _session.SourceDisabled += OnSourceDisabled;
+                _session.TransferError += (_, _) => CompleteWithError(
+                    new InvalidOperationException("O driver TWAIN não conseguiu transferir a imagem."));
+                _session.TransferCanceled += (_, _) => Close();
+
+                _messageLoopHook = new WindowsFormsMessageLoopHook(Handle);
+                _session.Open(_messageLoopHook);
+
+                var source = _session.ShowSourceSelector();
+                if (source is null)
+                {
+                    Close();
+                    return;
+                }
+
+                source.Enable(SourceEnableMode.ShowUI, true, Handle);
+            }
+            catch (Exception exception)
+            {
+                CompleteWithError(new InvalidOperationException(
+                    "Não foi possível abrir um driver TWAIN. Confirme que o driver ISIS/TWAIN da Canon está instalado.",
+                    exception));
+            }
+        }
+
+        private void OnDataTransferred(object? sender, DataTransferredEventArgs eventArgs)
+        {
+            try
+            {
+                using var source = eventArgs.GetNativeImageStream();
+                using var image = Image.FromStream(source);
+
+                _filePath = Path.Combine(Path.GetTempPath(), $"digitalizacacim-{Guid.NewGuid():N}.png");
+                image.Save(_filePath, ImageFormat.Png);
+            }
+            catch (Exception exception)
+            {
+                CompleteWithError(new InvalidOperationException(
+                    "O driver TWAIN retornou uma imagem que não pôde ser processada.",
+                    exception));
+            }
+        }
+
+        private void OnSourceDisabled(object? sender, EventArgs eventArgs)
+        {
+            Close();
+        }
+
+        private void CompleteWithError(Exception exception)
+        {
+            _error = exception;
+            Close();
         }
     }
 }

@@ -1,11 +1,11 @@
 # Agente Windows de Digitalização
 
-Este agente substitui o componente Asprise no fluxo de digitalização do sistema. Ele usa a interface WIA instalada no Windows, abre a janela nativa do driver e envia o arquivo diretamente ao pedido e tipo de documento escolhidos no sistema.
+Este agente substitui o componente Asprise no fluxo de digitalização do sistema. Ele usa a interface TWAIN do driver instalado no Windows, abre a janela nativa do scanner e envia o arquivo diretamente ao pedido e tipo de documento escolhidos no sistema.
 
 ## Requisitos da estação
 
 - Windows 10 ou Windows 11 de 64 bits.
-- Driver WIA do scanner instalado e funcionando no aplicativo **Digitalizar** do Windows.
+- Driver TWAIN/ISIS do scanner instalado. O Canon imageFORMULA P-208II utiliza este driver.
 - .NET 8 Desktop Runtime x64.
 - A aplicação web deve ser acessada por HTTPS em produção. O agente só aceita envio HTTP para `localhost`, impedindo o envio de documentos e autorizações temporárias por uma rede não criptografada.
 
@@ -41,8 +41,8 @@ Cada operação usa uma autorização única válida por cinco minutos. O agente
 
 Se a janela do scanner não abrir:
 
-1. Execute o aplicativo **Digitalizar** do Windows e confirme que o dispositivo aparece.
-2. Reinstale/atualize o driver WIA do fabricante.
+1. Confirme que o Canon aparece no seletor do driver TWAIN/CaptureOnTouch.
+2. Reinstale/atualize o driver ISIS/TWAIN do fabricante.
 3. Execute novamente `DigitalizacaoCacim.ScannerAgent.exe --install`.
 4. Confirme que o sistema está aberto por HTTPS e que a estação tem acesso ao servidor.
 

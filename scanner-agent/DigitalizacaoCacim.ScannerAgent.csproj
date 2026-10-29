@@ -8,4 +8,7 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NTwain" Version="3.7.6" />
+  </ItemGroup>
 </Project>
