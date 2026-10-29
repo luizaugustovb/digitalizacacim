@@ -20,12 +20,24 @@ internal static class Program
 
         if (args.Length == 0 || (args.Length == 1 && string.Equals(args[0], "--install", StringComparison.OrdinalIgnoreCase)))
         {
-            InstallAgent();
-            MessageBox.Show(
-                "Agente de digitalização instalado para o usuário atual.",
-                "Digitalização CACIM",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+            try
+            {
+                InstallAgent();
+                MessageBox.Show(
+                    "Agente de digitalização instalado para o usuário atual.",
+                    "Digitalização CACIM",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(
+                    $"Não foi possível instalar o agente.\n\n{exception.Message}",
+                    "Digitalização CACIM",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+
             return;
         }
 
