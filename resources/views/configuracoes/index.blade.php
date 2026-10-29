@@ -392,6 +392,10 @@
 
                     <div class="text-sm text-gray-600 dark:text-gray-400">
                         <p>Após o download, dê duplo clique no arquivo. Para digitalizar, o scanner precisa ter o driver TWAIN/ISIS do fabricante instalado.</p>
+                        <p class="mt-2">
+                            Se o scanner funciona no software do fabricante, mas não aparece no agente, use a
+                            <a href="{{ route('configuracoes.scanner.download', ['arquitetura' => 'x86']) }}" class="font-medium text-blue-600 hover:underline dark:text-blue-400">versão de compatibilidade 32 bits</a>.
+                        </p>
                     </div>
                 </div>
 

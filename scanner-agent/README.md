@@ -17,12 +17,13 @@ Na máquina de desenvolvimento:
 
 ```powershell
 cd scanner-agent
-.\publish-agent.ps1
+.\publish-agent.ps1 -Runtime win-x64
+.\publish-agent.ps1 -Runtime win-x86
 ```
 
-Publique o arquivo `publish/DigitalizacaoCacim.ScannerAgent.exe` como um asset de release. A tela **Configurações > Scanner** do sistema direciona o administrador para esse arquivo.
+Publique `publish/win-x64/DigitalizacaoCacim.ScannerAgent.exe` e `publish/win-x86/DigitalizacaoCacim.ScannerAgent.exe` como assets de release. A tela **Configurações > Scanner** oferece as duas edições.
 
-Na estação, basta baixar e dar duplo clique em `DigitalizacaoCacim.ScannerAgent.exe`. O próprio executável:
+Na estação, baixe e dê duplo clique na edição que corresponde ao driver TWAIN. Use 64 bits por padrão; use a edição 32 bits quando o scanner aparecer no software do fabricante, mas não aparecer no agente 64 bits. O próprio executável:
 
 - copia-se para `%LocalAppData%\DigitalizacaoCACIM\ScannerAgent`;
 - registra o protocolo `digitalizacacim-scanner://` para o usuário atual;
