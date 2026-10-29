@@ -336,6 +336,7 @@ internal static class TwainScanner
                     return;
                 }
 
+                source.Open();
                 source.Enable(SourceEnableMode.ShowUI, true, Handle);
             }
             catch (Exception exception)
