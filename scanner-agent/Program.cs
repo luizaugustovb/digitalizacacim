@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Net;
 using System.Runtime.Versioning;
 using System.Drawing.Imaging;
 using Microsoft.Win32;
@@ -12,19 +13,22 @@ internal static class Program
 {
     private const string Protocol = "digitalizacacim-scanner";
     private const string ExecutableName = "DigitalizacaoCacim.ScannerAgent.exe";
+    private const string SettingsRegistryPath = @"Software\DigitalizacaoCACIM\ScannerAgent";
 
     [STAThread]
     private static async Task Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
 
-        if (args.Length == 0 || (args.Length == 1 && string.Equals(args[0], "--install", StringComparison.OrdinalIgnoreCase)))
+        if (IsInstallCommand(args, out var allowInsecureHttp))
         {
             try
             {
-                InstallAgent();
+                InstallAgent(allowInsecureHttp);
                 MessageBox.Show(
-                    "Agente de digitalização instalado para o usuário atual.",
+                    allowInsecureHttp
+                        ? "Agente instalado com HTTP permitido para endereços privados da rede."
+                        : "Agente de digitalização instalado para o usuário atual.",
                     "Digitalização CACIM",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -44,7 +48,7 @@ internal static class Program
         ScanRequest? request = null;
         string? error = null;
 
-        if (args.Length != 1 || !ScanRequest.TryParse(args[0], out request, out error))
+        if (args.Length != 1 || !ScanRequest.TryParse(args[0], IsInsecureHttpAllowed(), out request, out error))
         {
             MessageBox.Show(
                 error ?? "Abra a digitalização pelo sistema CACIM.",
@@ -93,7 +97,27 @@ internal static class Program
         }
     }
 
-    private static void InstallAgent()
+    private static bool IsInstallCommand(string[] args, out bool allowInsecureHttp)
+    {
+        allowInsecureHttp = false;
+
+        if (args.Length == 0 || (args.Length == 1 && string.Equals(args[0], "--install", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        if (args.Length == 2
+            && string.Equals(args[0], "--install", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(args[1], "--allow-insecure-http", StringComparison.OrdinalIgnoreCase))
+        {
+            allowInsecureHttp = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static void InstallAgent(bool allowInsecureHttp)
     {
         var source = Environment.ProcessPath
             ?? throw new InvalidOperationException("Não foi possível identificar o executável do agente.");
@@ -120,6 +144,15 @@ internal static class Program
         }
 
         RegisterProtocol(destination);
+        using var settings = Registry.CurrentUser.CreateSubKey(SettingsRegistryPath)
+            ?? throw new InvalidOperationException("Não foi possível salvar as configurações do agente.");
+        settings.SetValue("AllowInsecureHttp", allowInsecureHttp ? 1 : 0, RegistryValueKind.DWord);
+    }
+
+    private static bool IsInsecureHttpAllowed()
+    {
+        using var settings = Registry.CurrentUser.OpenSubKey(SettingsRegistryPath);
+        return settings?.GetValue("AllowInsecureHttp") is 1;
     }
 
     private static void RegisterProtocol(string executable)
@@ -169,7 +202,7 @@ internal static class Program
 
 internal sealed record ScanRequest(string SessionId, string Token, Uri UploadUrl)
 {
-    public static bool TryParse(string value, out ScanRequest? request, out string? error)
+    public static bool TryParse(string value, bool allowInsecureHttp, out ScanRequest? request, out string? error)
     {
         request = null;
         error = null;
@@ -190,7 +223,7 @@ internal sealed record ScanRequest(string SessionId, string Token, Uri UploadUrl
             || string.IsNullOrWhiteSpace(token)
             || !parameters.TryGetValue("upload_url", out var uploadUrl)
             || !Uri.TryCreate(uploadUrl, UriKind.Absolute, out var uploadUri)
-            || (uploadUri.Scheme != Uri.UriSchemeHttps && !uploadUri.IsLoopback))
+            || !IsAllowedUploadUri(uploadUri, allowInsecureHttp))
         {
             error = "A solicitação de digitalização não contém uma autorização válida.";
             return false;
@@ -198,6 +231,26 @@ internal sealed record ScanRequest(string SessionId, string Token, Uri UploadUrl
 
         request = new ScanRequest(sessionId, token, uploadUri);
         return true;
+    }
+
+    private static bool IsAllowedUploadUri(Uri uploadUri, bool allowInsecureHttp)
+    {
+        if (uploadUri.Scheme == Uri.UriSchemeHttps || uploadUri.IsLoopback)
+        {
+            return true;
+        }
+
+        if (!allowInsecureHttp || uploadUri.Scheme != Uri.UriSchemeHttp || !IPAddress.TryParse(uploadUri.Host, out var address))
+        {
+            return false;
+        }
+
+        var bytes = address.GetAddressBytes();
+
+        return bytes.Length == 4
+            && (bytes[0] == 10
+                || (bytes[0] == 172 && bytes[1] is >= 16 and <= 31)
+                || (bytes[0] == 192 && bytes[1] == 168));
     }
 
     private static Dictionary<string, string> ParseQuery(string query)

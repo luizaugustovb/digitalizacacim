@@ -9,6 +9,8 @@ Este agente substitui o componente Asprise no fluxo de digitalização do sistem
 - .NET 8 Desktop Runtime x64.
 - A aplicação web deve ser acessada por HTTPS em produção. O agente só aceita envio HTTP para `localhost`, impedindo o envio de documentos e autorizações temporárias por uma rede não criptografada.
 
+> **Exceção para rede interna:** quando o servidor só estiver disponível por HTTP em um IP privado, instale o agente usando a opção `--allow-insecure-http`. Essa opção permite HTTP apenas para endereços `10.x.x.x`, `172.16.x.x` a `172.31.x.x` e `192.168.x.x`. Os documentos e tokens trafegarão sem criptografia; use-a somente em rede interna confiável.
+
 O piloto gera um PNG por operação de digitalização. O driver pode apresentar sua própria tela para escolher origem, resolução e alimentador automático.
 
 ## Publicação e instalação
@@ -33,6 +35,12 @@ Também é possível executar:
 
 ```powershell
 .\DigitalizacaoCacim.ScannerAgent.exe --install
+```
+
+Para permitir o servidor HTTP em rede interna:
+
+```powershell
+.\DigitalizacaoCacim.ScannerAgent.exe --install --allow-insecure-http
 ```
 
 ## Uso
