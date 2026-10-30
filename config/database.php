@@ -72,6 +72,8 @@ return [
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
+            'encrypt' => env('SOFTLAB_DB_ENCRYPT', 'yes'),
+            'trust_server_certificate' => env('SOFTLAB_DB_TRUST_SERVER_CERTIFICATE', 'true'),
         ],
 
         'mariadb' => [
